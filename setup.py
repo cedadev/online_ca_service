@@ -57,14 +57,14 @@ Examples are contained in ``contrail.security.onlineca.server.test``.
     author_email =    	'Philip.Kershaw@stfc.ac.uk',
     maintainer =        'Philip Kershaw',
     maintainer_email =  'Philip.Kershaw@stfc.ac.uk',
-    url =             	'https://github.com/philipkershaw/online_ca_service',
+    url =             	'https://github.com/cedadev/online_ca_service',
     platforms =         ['POSIX', 'Linux', 'Windows'],
     install_requires =  ['ContrailCA',
                          'PasteScript',
                          'WebOb'],
     extras_require =    {'repoze.who': 'repoze.who'},
     license =           __license__,
-    test_suite =        'contrail.securuity.onlineca.server.test',
+    test_suite =        'contrail.security.onlineca.server.test',
     packages =          find_packages(),
     package_data =      {
         'contrail.security.onlineca.server.test': [
