@@ -52,12 +52,12 @@ class OnlineCaApp(object):
     
     def __call__(self, environ, start_response):
         """Catch case where request path doesn't match mount point for app"""
-#        status = response = '404 Not Found'
-#        start_response(status,
-#                       [('Content-type', 'text/plain'),
-#                        ('Content-length', str(len(response)))])
-#        return [response]
-        raise HTTPNotFound()
+        status = '%d %s' % (HTTPNotFound.code, HTTPNotFound.title)
+        response = HTTPNotFound.explanation
+        start_response(status,
+                       [('Content-type', 'text/plain'),
+                        ('Content-length', str(len(response)))])
+        return [response]
         
 
 class OnlineCaWithClientRegisterApp(OnlineCaApp):

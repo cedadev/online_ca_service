@@ -165,11 +165,18 @@ class HttpBasicAuthMiddleware(object):
         self.rePathMatchList = [re.compile(i) 
                                 for i in rePathMatchListVal.split()]
 
-        paramName = prefix + \
+        param_name = prefix + \
                     HttpBasicAuthMiddleware.AUTHN_FUNC_ENV_KEYNAME_OPTNAME
                     
-        self.authnFuncEnvironKeyName = app_conf.get(paramName,
+        self.authnFuncEnvironKeyName = app_conf.get(param_name,
                                 HttpBasicAuthMiddleware.AUTHN_FUNC_ENV_KEYNAME)
+        
+        realm = app_conf.get(prefix + self.__class__.REALM_OPTNAME)
+        if realm is not None:
+            self.realm = realm
+        else:
+            raise HttpBasicAuthMiddlewareConfigError('No authentication realm '
+                                                     'set')
 
     def _getAuthnFuncEnvironKeyName(self):
         """Get authentication callback function environ key name
