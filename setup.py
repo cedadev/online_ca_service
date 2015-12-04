@@ -21,7 +21,7 @@ except ImportError:
 
 setup(
     name =            	'ContrailOnlineCAService',
-    version =         	'0.1.1',
+    version =         	'0.2.0',
     description =     	'Certificate Authority Web Service',
     long_description = 	'''\
 Provides a simple web service interface to a Certificate Authority.  This is 

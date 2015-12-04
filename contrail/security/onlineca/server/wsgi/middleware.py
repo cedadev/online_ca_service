@@ -288,7 +288,7 @@ class OnlineCaMiddleware(object):
             return e(environ, start_response)
         
         if response is None:
-            self._app(environ, start_response)
+            return self._app(environ, start_response)
         else:
             start_response('200 OK',
                            [('Content-length', str(len(response))),
