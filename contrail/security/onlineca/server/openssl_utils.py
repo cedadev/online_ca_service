@@ -39,12 +39,13 @@ class X509SubjectName(object):
         'domainComponent':          'DC',
         'userid':                   'UID'
     }
-    SLASH_PARSER_RE_STR = '/(%s)=' % '|'.join(SHORT_NAME_LOOKUP.keys() + 
-                                              SHORT_NAME_LOOKUP.values())    
+    SLASH_PARSER_RE_STR = '/(%s)=' % '|'.join(list(SHORT_NAME_LOOKUP.keys()) + 
+                                              list(SHORT_NAME_LOOKUP.values()))
     SLASH_PARSER_RE = re.compile(SLASH_PARSER_RE_STR)
 
-    COMMA_PARSER_RE_STR = '[,]?\s*(%s)=' % '|'.join(SHORT_NAME_LOOKUP.keys() + 
-                                                    SHORT_NAME_LOOKUP.values())    
+    COMMA_PARSER_RE_STR = '[,]?\s*(%s)=' % '|'.join(
+                                            list(SHORT_NAME_LOOKUP.keys()) + 
+                                            list(SHORT_NAME_LOOKUP.values())) 
     COMMA_PARSER_RE = re.compile(COMMA_PARSER_RE_STR)
             
     VALID_SEPARATORS = ('/', ',')

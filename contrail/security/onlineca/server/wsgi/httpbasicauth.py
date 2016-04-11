@@ -11,10 +11,16 @@ __revision__ = "$Id$"
 import logging
 log = logging.getLogger(__name__)
 import re
-import httplib
+import six
 import base64
     
 from paste.httpexceptions import HTTPException, HTTPUnauthorized
+
+# For Python 3 convert ASCII strings to unicode, for Python 2 pass through
+if six.PY2:
+    _unicode_for_py3 = lambda string_: string_
+else:
+    _unicode_for_py3 = lambda string_: string_.decode()
 
 
 class HttpBasicAuthMiddlewareError(Exception):
@@ -40,7 +46,7 @@ class HttpBasicAuthResponseException(HttpBasicAuthMiddlewareError):
             self.code = argList.pop()
             arg = tuple(argList)
         else:
-            self.code = httplib.UNAUTHORIZED
+            self.code = six.moves.http_client.UNAUTHORIZED
                 
         HttpBasicAuthMiddlewareError.__init__(self, *arg, **kw)
     
@@ -86,7 +92,7 @@ class HttpBasicAuthMiddleware(object):
     @type __app: function
     '''
     AUTHN_FUNC_ENV_KEYNAME = (
-    'myproxy.server.wsgi.httpbasicauth.HttpBasicAuthMiddleware.authenticate')
+    'onlineca.server.wsgi.httpbasicauth.HttpBasicAuthMiddleware.authenticate')
     
     # Config file option names
     AUTHN_FUNC_ENV_KEYNAME_OPTNAME = 'authnFuncEnvKeyName'       
@@ -135,7 +141,7 @@ class HttpBasicAuthMiddleware(object):
         @param app: next middleware/application in the chain      
         @type global_conf: dict        
         @param global_conf: PasteDeploy global configuration dictionary
-        @type prefix: basestring
+        @type prefix: string
         @param prefix: prefix for configuration items
         @type local_conf: dict        
         @param local_conf: PasteDeploy application specific configuration 
@@ -152,7 +158,7 @@ class HttpBasicAuthMiddleware(object):
         """Parse dictionary of configuration items updating the relevant 
         attributes of this instance
         
-        @type prefix: basestring
+        @type prefix: string
         @param prefix: prefix for configuration items
         @type app_conf: dict        
         @param app_conf: PasteDeploy application specific configuration 
@@ -181,7 +187,7 @@ class HttpBasicAuthMiddleware(object):
     def _getAuthnFuncEnvironKeyName(self):
         """Get authentication callback function environ key name
         
-        @rtype: basestring
+        @rtype: string
         @return: callback function environ key name
         """
         return self.__authnFuncEnvironKeyName
@@ -189,10 +195,10 @@ class HttpBasicAuthMiddleware(object):
     def _setAuthnFuncEnvironKeyName(self, value):
         """Set authentication callback environ key name
         
-        @type value: basestring
+        @type value: string
         @param value: callback function environ key name
         """
-        if not isinstance(value, basestring):
+        if not isinstance(value, six.string_types):
             raise TypeError('Expecting string type for '
                             '"authnFuncEnvironKeyName"; got %r type' % 
                             type(value))
@@ -235,7 +241,7 @@ class HttpBasicAuthMiddleware(object):
     def _get_realm(self):
         """Get realm
         
-        @rtype: basestring
+        @rtype: string
         @return: HTTP Authentication realm to set in responses
         """
         return self.__realm
@@ -243,10 +249,10 @@ class HttpBasicAuthMiddleware(object):
     def _set_realm(self, value):
         """Set realm
         
-        @type value: basestring
+        @type value: string
         @param value: HTTP Authentication realm to set in responses
         """
-        if not isinstance(value, basestring):
+        if not isinstance(value, six.string_types):
             raise TypeError('Expecting string type for '
                             '"realm"; got %r' % type(value))
         
@@ -291,15 +297,22 @@ class HttpBasicAuthMiddleware(object):
                       HttpBasicAuthMiddleware.AUTHZ_ENV_KEYNAME)
             return None, None
                        
-        method, encoded_creds = basic_auth_hdr.split(None, 1)
-        if (method.lower() != cls.AUTHN_SCHEME_HDR_FIELDNAME_LOWER):
+        try:
+            method, encoded_creds = basic_auth_hdr.split(None, 1)
+        except ValueError:
+            log.error('Error parsing authorization header, expecting method '
+                      'string and encoded credentials, got %r', 
+                      basic_auth_hdr)
+            return None, None
+        
+        if method.lower() != cls.AUTHN_SCHEME_HDR_FIELDNAME_LOWER:
             log.debug("Auth method is %r not %r: skipping request",
                       method, 
                       cls.AUTHN_SCHEME_HDR_FIELDNAME)
             return None, None
             
-        creds = base64.decodestring(encoded_creds)
-        username, password = creds.rsplit(cls.FIELD_SEP, 1)
+        creds = base64.decodestring(encoded_creds.encode('ascii'))
+        username, password = _unicode_for_py3(creds).rsplit(cls.FIELD_SEP, 1)
         return username, password
 
     def __call__(self, environ, start_response):
@@ -323,7 +336,7 @@ class HttpBasicAuthMiddleware(object):
         def start_response_wrapper(status, headers, exec_info=None): 
             """Ensure Authentication realm is included with 401 responses"""
             status_code = int(status.split()[0])
-            if status_code == httplib.UNAUTHORIZED:
+            if status_code == six.moves.http_client.UNAUTHORIZED:
                 authn_realm_hdrFound = False
                 for name, val in headers:
                     if (name.lower() == 
@@ -362,5 +375,5 @@ class HttpBasicAuthMiddleware(object):
                               password)
             return self.__app(environ, start_response_wrapper)
 
-        except HTTPException, e:
+        except HTTPException as e:
             return e(environ, start_response)

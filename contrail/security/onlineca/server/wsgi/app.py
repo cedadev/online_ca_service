@@ -8,6 +8,7 @@ __copyright__ = "(C) 2012 Science and Technology Facilities Council"
 __license__ = "BSD - see LICENSE file in top-level directory"
 __contact__ = "Philip.Kershaw@stfc.ac.uk"
 __revision__ = "$Id: $"
+from webob import Response
 from paste.httpexceptions import HTTPNotFound
 
 from contrail.security.onlineca.server.wsgi.middleware import OnlineCaMiddleware
@@ -52,12 +53,11 @@ class OnlineCaApp(object):
     
     def __call__(self, environ, start_response):
         """Catch case where request path doesn't match mount point for app"""
-        status = '%d %s' % (HTTPNotFound.code, HTTPNotFound.title)
-        response = HTTPNotFound.explanation
-        start_response(status,
-                       [('Content-type', 'text/plain'),
-                        ('Content-length', str(len(response)))])
-        return [response]
+        response = Response(charset='utf8', status=HTTPNotFound.code,
+                            body=HTTPNotFound.explanation)
+        start_response(response.status, response.headerlist)
+        
+        return [response.body]
         
 
 class OnlineCaWithClientRegisterApp(OnlineCaApp):

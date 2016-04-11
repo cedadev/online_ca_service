@@ -16,13 +16,15 @@ import base64
 import os
 import unittest
 
+from webob import Response
 import paste.fixture
 from paste.deploy import loadapp
-from paste.httpexceptions import HTTPUnauthorized
+from paste.httpexceptions import HTTPNotFound
 
 from contrail.security.onlineca.server.wsgi.client_register import \
                                                         ClientRegisterMiddleware
 from contrail.security.onlineca.server.test import TEST_DIR, TEST_CA_DIR
+from contrail.security.onlineca.server import unicode_for_py3
 
 
 class TestApp(object):
@@ -38,25 +40,26 @@ class TestApp(object):
         against.  If this method is executed then the HTTP Basic Auth step in
         the upstream middleware has succeeded.
         """
-        if environ['PATH_INFO'] == '/certificate/':
-            response = 'Authenticated!'
-            status = '200 OK'
-        else:
-            response = 'Not found'
-            status = '404 Not Found'
+        response = Response(charset='utf8', text=HTTPNotFound.explanation,
+                            status=HTTPNotFound.code)
+
+        if environ['PATH_INFO'] == '/auth':
+            response.text = 'Authenticated!'
+            response.status_code = 200        
             
-        contentType = 'text/plain'
-            
-        start_response(status,
-                       [('Content-type', contentType),
-                        ('Content-Length', str(len(response)))])
-        return [response]
+        start_response(response.status, response.headerlist)
+        return [response.body]
     
     
 class TestClientRegisterMiddleware(unittest.TestCase):
     CONFIG_FILE = 'client_register.ini'
-    CLIENT_CERT = open(os.path.join(TEST_DIR, 'localhost.crt')).read()
-    INVALID_CLIENT_CERT = open(os.path.join(TEST_CA_DIR, 'd573507a.0')).read()
+    
+    with open(os.path.join(TEST_DIR, 'localhost.crt')) as client_cert_file:
+        CLIENT_CERT = client_cert_file.read()
+        
+    with open(os.path.join(TEST_CA_DIR, 
+                           '98ef0ee5.0')) as invalid_client_cert_file:
+        INVALID_CLIENT_CERT = invalid_client_cert_file.read()
     
     def setUp(self):
         """Set-up Paste fixture from ini file settings"""
@@ -66,59 +69,59 @@ class TestClientRegisterMiddleware(unittest.TestCase):
         self.app = paste.fixture.TestApp(wsgiapp)
             
     def test01_valid_client(self):
-        username = 'j.bloggs'
-        password = ''
-        base64string = base64.encodestring('%s:%s' % (username, password))[:-1]
-        auth_header =  "Basic %s" % base64string
+        username = b'j.bloggs'
+        password = b''
+        base64string = base64.encodestring(b'%s:%s' % (username, password))[:-1]
+        auth_header =  "Basic %s" % unicode_for_py3(base64string)
         headers = {'Authorization': auth_header}
 
         environ = {ClientRegisterMiddleware.DEFAULT_SSL_CLIENT_CERT_KEYNAME: 
                    self.__class__.CLIENT_CERT}
-        response = self.app.get('/certificate/', status=200, headers=headers,
+        response = self.app.get('/auth', status=200, headers=headers,
                                 extra_environ=environ)
         log.debug(response)
         
     def test02_invalid_client_and_username(self):
-        username = 'j.bogus'
-        password = ''
-        base64string = base64.encodestring('%s:%s' % (username, password))[:-1]
-        auth_header =  "Basic %s" % base64string
+        username = b'j.bogus'
+        password = b''
+        base64string = base64.encodestring(b'%s:%s' % (username, password))[:-1]
+        auth_header =  "Basic %s" % unicode_for_py3(base64string)
         headers = {'Authorization': auth_header}
 
         environ = {ClientRegisterMiddleware.DEFAULT_SSL_CLIENT_CERT_KEYNAME: 
                    self.__class__.INVALID_CLIENT_CERT}
-        self.app.get('/certificate/', status=401, headers=headers, 
+        self.app.get('/auth', status=401, headers=headers, 
                      extra_environ=environ)
         
     def test03_invalid_client(self):
-        username = 'an_other'
-        password = ''
-        base64string = base64.encodestring('%s:%s' % (username, password))[:-1]
-        auth_header =  "Basic %s" % base64string
+        username = b'an_other'
+        password = b''
+        base64string = base64.encodestring(b'%s:%s' % (username, password))[:-1]
+        auth_header =  "Basic %s" % unicode_for_py3(base64string)
         headers = {'Authorization': auth_header}
 
         environ = {ClientRegisterMiddleware.DEFAULT_SSL_CLIENT_CERT_KEYNAME: 
                    self.__class__.INVALID_CLIENT_CERT}
-        self.app.get('/certificate/', status=401, headers=headers, 
+        self.app.get('/auth', status=401, headers=headers, 
                      extra_environ=environ)
             
     def test04_valid_username(self):
-        username = 'asmith'
-        password = ''
-        base64string = base64.encodestring('%s:%s' % (username, password))[:-1]
-        auth_header =  "Basic %s" % base64string
+        username = b'asmith'
+        password = b''
+        base64string = base64.encodestring(b'%s:%s' % (username, password))[:-1]
+        auth_header = "Basic %s" % unicode_for_py3(base64string)
         headers = {'Authorization': auth_header}
 
         environ = {ClientRegisterMiddleware.DEFAULT_SSL_CLIENT_CERT_KEYNAME: 
                    self.__class__.CLIENT_CERT}
-        self.app.get('/certificate/', status=401, headers=headers, 
+        self.app.get('/auth', status=401, headers=headers, 
                      extra_environ=environ)
         
     def test05_unsecured_path(self):
-        username = 'asmith'
-        password = ''
-        base64string = base64.encodestring('%s:%s' % (username, password))[:-1]
-        auth_header =  "Basic %s" % base64string
+        username = b'asmith'
+        password = b''
+        base64string = base64.encodestring(b'%s:%s' % (username, password))[:-1]
+        auth_header =  "Basic %s" % unicode_for_py3(base64string)
         headers = {'Authorization': auth_header}
 
         environ = {ClientRegisterMiddleware.DEFAULT_SSL_CLIENT_CERT_KEYNAME: 

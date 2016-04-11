@@ -21,6 +21,8 @@ from paste.httpexceptions import (HTTPException, HTTPMethodNotAllowed,
                                   HTTPBadRequest)
 from OpenSSL import crypto
 
+import six
+
 from contrail.security.onlineca.server.interfaces import OnlineCaInterface
 from contrail.security.onlineca.server.factory import call_module_object
 from contrail.security.onlineca.server.openssl_utils import X509SubjectName
@@ -132,9 +134,9 @@ class OnlineCaMiddleware(object):
         """Parse dictionary of configuration items updating the relevant 
         attributes of this instance
         
-        @type prefix: basestring
+        @type prefix: string
         @param prefix: prefix for configuration items
-        @type ca_prefix: basestring
+        @type ca_prefix: string
         @param ca_prefix: explicit prefix for CA class 
         specific configuration items - ignored in this derived method
         @type app_conf: dict        
@@ -196,7 +198,7 @@ class OnlineCaMiddleware(object):
 
     @ca_class_factory_path.setter
     def ca_class_factory_path(self, value):
-        if not isinstance(value, basestring):
+        if not isinstance(value, six.string_types):
             raise TypeError('Expecting string type for "ca_class_factory_path"'
                             '; got %r type' % type(value))
             
@@ -205,7 +207,7 @@ class OnlineCaMiddleware(object):
     @property
     def issue_cert_uripath(self):
         """Get URI path for get trust roots method
-        @rtype: basestring
+        @rtype: string
         @return: path for get trust roots method
         """
         return self.__issue_cert_uripath
@@ -213,10 +215,10 @@ class OnlineCaMiddleware(object):
     @issue_cert_uripath.setter
     def issue_cert_uripath(self, value):
         """Set URI path for get trust roots method
-        @type value: basestring
+        @type value: string
         @param value: path for get trust roots method
         """
-        if not isinstance(value, basestring):
+        if not isinstance(value, six.string_types):
             raise TypeError('Expecting string type for '
                             '"issue_cert_uripath"; got %r' % 
                             type(value))
@@ -229,7 +231,7 @@ class OnlineCaMiddleware(object):
 
     @cert_subject_name_template.setter
     def cert_subject_name_template(self, value):
-        if not isinstance(value, basestring):
+        if not isinstance(value, six.string_types):
             raise TypeError('Expecting string type for '
                             '"cert_subject_name_template"; got %r' % 
                             type(value))
@@ -239,7 +241,7 @@ class OnlineCaMiddleware(object):
     @property
     def trustroots_uripath(self):
         """Get URI path for get trust roots method
-        @rtype: basestring
+        @rtype: string
         @return: path for get trust roots method
         """
         return self.__trustroots_uripath
@@ -248,7 +250,7 @@ class OnlineCaMiddleware(object):
     def trustroots_uripath(self, value):
         """trust roots path
         """
-        if not isinstance(value, basestring):
+        if not isinstance(value, six.string_types):
             raise TypeError('Expecting string type for "path"; got %r' % 
                             type(value))
         
@@ -264,7 +266,7 @@ class OnlineCaMiddleware(object):
     def trustroots_dir(self, value):
         """trust roots dir
         """
-        if not isinstance(value, basestring):
+        if not isinstance(value, six.string_types):
             raise TypeError('Expecting string type for "path"; got %r' % 
                             type(value))
         
@@ -284,7 +286,7 @@ class OnlineCaMiddleware(object):
         try:
             response = self._process_request(request)
             
-        except HTTPException, e:
+        except HTTPException as e:
             return e(environ, start_response)
         
         if response is None:
@@ -369,7 +371,7 @@ class OnlineCaMiddleware(object):
         
         @param request: HTTP request
         @type request: webob.Request
-        @rtype: basestring
+        @rtype: string
         @return: trust roots base64 encoded and concatenated together
         """
         if request.method != 'GET':

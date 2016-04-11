@@ -13,6 +13,8 @@ import traceback
 import logging, os, sys
 log = logging.getLogger(__name__)
 
+import six
+
 
 def import_module_object(module_name, object_name=None, object_type=None):
     '''Import from a string module name and object name.  _object can be
@@ -41,7 +43,7 @@ def import_module_object(module_name, object_name=None, object_type=None):
     else:
         _module_name = module_name
         
-    if isinstance(object_name, basestring):
+    if isinstance(object_name, six.string_types):
         object_name = [object_name]
     
     log.debug("Importing %r ..." % object_name) 
@@ -126,7 +128,7 @@ def call_module_object(module_name, object_name=None, module_filepath=None,
             if sys_path_bak:
                 sys.path = sys_path_bak
                             
-    except Exception, e:
+    except Exception as e:
         log.error('%r module import raised %r type exception: %r' % 
                   (module_name, e.__class__, traceback.format_exc()))
         raise 
@@ -141,7 +143,7 @@ def call_module_object(module_name, object_name=None, module_filepath=None,
             
         return obj
 
-    except Exception, e:
+    except Exception as e:
         log.error("Instantiating module object, %r: %r" % 
                                                     (imported_object.__name__, 
                                                      traceback.format_exc()))
