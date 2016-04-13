@@ -16,6 +16,8 @@ import base64
 import os
 import unittest
 
+import six
+
 from webob import Response
 import paste.fixture
 from paste.deploy import loadapp
@@ -40,11 +42,12 @@ class TestApp(object):
         against.  If this method is executed then the HTTP Basic Auth step in
         the upstream middleware has succeeded.
         """
-        response = Response(charset='utf8', text=HTTPNotFound.explanation,
+        response = Response(charset='utf8', 
+                            text=six.u(HTTPNotFound.explanation),
                             status=HTTPNotFound.code)
 
         if environ['PATH_INFO'] == '/auth':
-            response.text = 'Authenticated!'
+            response.text = six.u('Authenticated!')
             response.status_code = 200        
             
         start_response(response.status, response.headerlist)

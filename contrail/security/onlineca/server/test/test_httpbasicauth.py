@@ -36,7 +36,7 @@ class TestApp(object):
         the upstream middleware has succeeded.
         """
         contentType = 'text/plain'
-        response = 'Authenticated!'
+        response = b'Authenticated!'
         status = '200 OK'
         start_response(status,
                        [('Content-type', contentType),
@@ -50,7 +50,7 @@ class TestHttpBasicAuthCallBackAppMiddleware(object):
     """    
     USERNAME = b'testuser'
     PASSWORD = b'changeme'
-    SUCCESS_RESPONSE = 'AUTHENTICATED'
+    SUCCESS_RESPONSE = 'Authenticated!'
     FAILURE_RESPONSE = 'FAILED'
     
     def __init__(self, app, global_conf, **app_conf):
@@ -62,8 +62,10 @@ class TestHttpBasicAuthCallBackAppMiddleware(object):
             """Authentication callback application - its responsible for the
             response message and response code
             """
-            if (username == self.__class__.USERNAME and
-                password == self.__class__.PASSWORD):
+            if (unicode_for_py3(username) == unicode_for_py3(
+                                                self.__class__.USERNAME) and
+                unicode_for_py3(password) == unicode_for_py3(
+                                                self.__class__.PASSWORD)):
                 pass
             else:
                 raise HTTPUnauthorized()
@@ -89,8 +91,8 @@ class TestHttpBasicAuthCallBackMiddleware(object):
         """Create HTTP Basic Auth callback"""
         def authenticate(environ, start_response, username, password):
             """HTTP Basic Auth callback function"""
-            if (username != self.__class__.USERNAME or
-                password != self.__class__.PASSWORD):
+            if (unicode_for_py3(username) != self.__class__.USERNAME or
+                unicode_for_py3(password) != self.__class__.PASSWORD):
                 raise HttpBasicAuthResponseException("Invalid credentials")
             
         environ['HTTPBASICAUTH_FUNC'] = authenticate
@@ -143,6 +145,7 @@ class HttpBasicAuthMiddlewareTestCase(unittest.TestCase):
         headers = {'Authorization': authHeader}
         
         response = self.app.get('/certificate/', headers=headers, status=401)
+        self.assertTrue(response)
         
     def _createCallbackMiddleware(self):
         # Test creating app independently of PasteScript and using an 

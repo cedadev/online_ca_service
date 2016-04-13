@@ -14,4 +14,5 @@ import six
 if six.PY2:
     unicode_for_py3 = lambda string_: string_
 else:
-    unicode_for_py3 = lambda string_: string_.decode()
+    unicode_for_py3 = lambda string_: (hasattr(string_, 'decode') and
+                                       string_.decode() or string_)
