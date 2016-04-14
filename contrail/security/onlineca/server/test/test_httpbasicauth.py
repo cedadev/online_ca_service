@@ -13,7 +13,9 @@ import base64
 
 import paste.fixture
 from paste.deploy import loadapp
+from paste.httpexceptions import HTTPUnauthorized
 
+from contrail.security.onlineca.server import unicode_for_py3
 from contrail.security.onlineca.server.wsgi.httpbasicauth import (
                                                 HttpBasicAuthMiddleware,
                                                 HttpBasicAuthResponseException)
@@ -34,8 +36,8 @@ class TestApp(object):
         the upstream middleware has succeeded.
         """
         contentType = 'text/plain'
-        response = 'Authenticated!'
-        status = 200
+        response = b'Authenticated!'
+        status = '200 OK'
         start_response(status,
                        [('Content-type', contentType),
                         ('Content-Length', str(len(response)))])
@@ -46,9 +48,9 @@ class TestHttpBasicAuthCallBackAppMiddleware(object):
     """Add an authentication function to the environ for HttpBasicAuthMiddleware
     to pick up and use.  It behaves as an application returning a response
     """    
-    USERNAME = 'myusername'
-    PASSWORD = 'mypassword'
-    SUCCESS_RESPONSE = 'AUTHENTICATED'
+    USERNAME = b'testuser'
+    PASSWORD = b'changeme'
+    SUCCESS_RESPONSE = 'Authenticated!'
     FAILURE_RESPONSE = 'FAILED'
     
     def __init__(self, app, global_conf, **app_conf):
@@ -60,18 +62,13 @@ class TestHttpBasicAuthCallBackAppMiddleware(object):
             """Authentication callback application - its responsible for the
             response message and response code
             """
-            if (username == self.__class__.USERNAME and
-                password == self.__class__.PASSWORD):
-                response = self.__class__.SUCCESS_RESPONSE
-                status = '200 OK'
+            if (unicode_for_py3(username) == unicode_for_py3(
+                                                self.__class__.USERNAME) and
+                unicode_for_py3(password) == unicode_for_py3(
+                                                self.__class__.PASSWORD)):
+                pass
             else:
-                response = self.__class__.FAILURE_RESPONSE
-                status = '401 Unauthorized'
-                
-            start_response(status,
-                           [('Content-type', 'text/plain'),
-                            ('Content-Length', str(len(response)))])
-            return [response]
+                raise HTTPUnauthorized()
             
         environ['HTTPBASICAUTH_FUNC'] = authenticationApp
         
@@ -83,8 +80,8 @@ class TestHttpBasicAuthCallBackMiddleware(object):
     to pick up and use.  The callback does not return a response leaving control
     with the HttpBasicAuthMiddleware
     """    
-    USERNAME = 'myusername'
-    PASSWORD = 'mypassword'
+    USERNAME = b'testuser'
+    PASSWORD = b'changeme'
     
     def __init__(self, app, global_conf, **app_conf):
         """Follow standard Paste Deploy app factory function signature"""
@@ -94,8 +91,8 @@ class TestHttpBasicAuthCallBackMiddleware(object):
         """Create HTTP Basic Auth callback"""
         def authenticate(environ, start_response, username, password):
             """HTTP Basic Auth callback function"""
-            if (username != self.__class__.USERNAME or
-                password != self.__class__.PASSWORD):
+            if (unicode_for_py3(username) != self.__class__.USERNAME or
+                unicode_for_py3(password) != self.__class__.PASSWORD):
                 raise HttpBasicAuthResponseException("Invalid credentials")
             
         environ['HTTPBASICAUTH_FUNC'] = authenticate
@@ -107,7 +104,7 @@ class HttpBasicAuthMiddlewareTestCase(unittest.TestCase):
     """Unit tests for HTTP Basic Auth middleware used with the Online CA service
     package
     """
-    CONFIG_FILE = 'httpbasicauth.ini'
+    CONFIG_FILE = 'httpbasicauth-server.ini'
     
     def __init__(self, *args, **kwargs):
         """Set-up Paste fixture from ini file settings"""
@@ -121,34 +118,34 @@ class HttpBasicAuthMiddlewareTestCase(unittest.TestCase):
         
     def test01NoHttpBasicAuthHeader(self):
         # Try with no HTTP Basic Auth HTTP header
-        response = self.app.get('/auth', status=401)
-        self.assert_(response, 'Null response')
+        response = self.app.get('/certificate/', status=401)
+        self.assertTrue(response, 'Null response')
             
     def test02ValidCredentials(self):
         # Try with no HTTP Basic Auth HTTP header
         username = TestHttpBasicAuthCallBackAppMiddleware.USERNAME
         password = TestHttpBasicAuthCallBackAppMiddleware.PASSWORD
         
-        base64String = base64.encodestring('%s:%s' % (username, password))[:-1]
-        authHeader =  "Basic %s" % base64String
+        base64String = base64.encodestring(b'%s:%s' % (username, password))[:-1]
+        authHeader =  "Basic %s" % unicode_for_py3(base64String)
         headers = {'Authorization': authHeader}
         
-        response = self.app.get('/auth', headers=headers, status=200)
-        self.assert_((TestHttpBasicAuthCallBackAppMiddleware.SUCCESS_RESPONSE in
-                      response))
+        response = self.app.get('/certificate/', headers=headers, status=200)
+        self.assertTrue((
+                    TestHttpBasicAuthCallBackAppMiddleware.SUCCESS_RESPONSE in
+                    response))
                       
     def test03InvalidCredentials(self):
         # Try with no HTTP Basic Auth HTTP header
-        username = 'x'
-        password = 'y'
+        username = b'x'
+        password = b'y'
         
-        base64String = base64.encodestring('%s:%s' % (username, password))[:-1]
-        authHeader =  "Basic %s" % base64String
+        base64String = base64.encodestring(b'%s:%s' % (username, password))[:-1]
+        authHeader =  "Basic %s" % unicode_for_py3(base64String)
         headers = {'Authorization': authHeader}
         
-        response = self.app.get('/auth', headers=headers, status=401)
-        self.assert_((TestHttpBasicAuthCallBackAppMiddleware.FAILURE_RESPONSE in
-                      response))
+        response = self.app.get('/certificate/', headers=headers, status=401)
+        self.assertTrue(response)
         
     def _createCallbackMiddleware(self):
         # Test creating app independently of PasteScript and using an 
@@ -157,7 +154,9 @@ class HttpBasicAuthMiddlewareTestCase(unittest.TestCase):
         app = TestApp({})
         app = HttpBasicAuthMiddleware.filter_app_factory(app, {},
                                 prefix='',
-                                authnFuncEnvironKeyName='HTTPBASICAUTH_FUNC')
+                                rePathMatchList='/certificate/',
+                                authnFuncEnvironKeyName='HTTPBASICAUTH_FUNC',
+                                realm='test-realm')
         app = TestHttpBasicAuthCallBackMiddleware(app, {})
 
         self.app2 = paste.fixture.TestApp(app)
@@ -167,23 +166,23 @@ class HttpBasicAuthMiddlewareTestCase(unittest.TestCase):
         username = TestHttpBasicAuthCallBackAppMiddleware.USERNAME
         password = TestHttpBasicAuthCallBackAppMiddleware.PASSWORD
         
-        base64String = base64.encodestring('%s:%s' % (username, password))[:-1]
-        authHeader =  "Basic %s" % base64String
+        base64String = base64.encodestring(b'%s:%s' % (username, password))[:-1]
+        authHeader =  "Basic %s" % unicode_for_py3(base64String)
         headers = {'Authorization': authHeader}
         
-        response = self.app.get('/auth', headers=headers, status=200)
-        self.assert_(response, 'Null response')
+        response = self.app.get('/certificate/', headers=headers, status=200)
+        self.assertTrue(response, 'Null response')
         
     def test05SimpleCBMiddlewareWithInvalidCredentials(self):
         self._createCallbackMiddleware()
-        username = 'a'
-        password = 'b'
+        username = b'a'
+        password = b'b'
         
-        base64String = base64.encodestring('%s:%s' % (username, password))[:-1]
-        authHeader =  "Basic %s" % base64String
+        base64String = base64.encodestring(b'%s:%s' % (username, password))[:-1]
+        authHeader =  "Basic %s" % unicode_for_py3(base64String)
         headers = {'Authorization': authHeader}
         
-        response = self.app.get('/auth', headers=headers, status=401)       
+        response = self.app.get('/certificate/', headers=headers, status=401)       
         self.assert_(response, 'Null response')
 
     

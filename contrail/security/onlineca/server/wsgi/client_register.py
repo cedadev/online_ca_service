@@ -13,8 +13,12 @@ import logging
 log = logging.getLogger(__name__)
 from datetime import datetime
 
+import six
+
 from OpenSSL import crypto
 from paste.httpexceptions import HTTPUnauthorized
+
+from contrail.security.onlineca.server import unicode_for_py3
 
 from contrail.security.onlineca.server.openssl_utils import X509SubjectName
 from contrail.security.onlineca.server.wsgi.httpbasicauth import \
@@ -58,7 +62,7 @@ class ClientRegisterMiddleware(object):
     
     @path_match_list.setter
     def path_match_list(self, val):
-        if isinstance(val, basestring):
+        if isinstance(val, six.string_types):
             self.__path_match_list = val.split()
         elif isinstance(val, (list, tuple)):
             self.__path_match_list = tuple(val)
@@ -172,8 +176,8 @@ class ClientRegisterMiddleware(object):
         @return: true if expired, false otherwise
         @rtype: bool
         '''
-        not_after = cert.get_notAfter()
-        dt_not_after = datetime.strptime(not_after, cls.X509_DATETIME_FMT)       
+        not_after = unicode_for_py3(cert.get_notAfter())
+        dt_not_after = datetime.strptime(not_after, cls.X509_DATETIME_FMT)
         dt_now = datetime.utcnow()
         
         return dt_not_after < dt_now
@@ -213,6 +217,8 @@ class ClientRegisterMiddleware(object):
     def cert_dn(cert):
         subject = cert.get_subject()
         components = subject.get_components()
-        cert_dn = '/'+ '/'.join(['%s=%s' % i for i in components])
+        cert_dn = '/'+ '/'.join(
+            ['%s=%s' % (unicode_for_py3(i), unicode_for_py3(j))
+             for i, j in components])
         return cert_dn
         
