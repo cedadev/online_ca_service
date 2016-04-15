@@ -6,7 +6,7 @@ Contrail Project
 __author__ = "P J Kershaw"
 __date__ = "21/05/10"
 __copyright__ = "(C) 2010 Science and Technology Facilities Council"
-__license__ = """BSD - See LICENSE file in top-level directory"""
+__license__ = """BSD - See LICENSE file in contrail.security.onlineca.server"""
 __contact__ = "Philip.Kershaw@stfc.ac.uk"
 __revision__ = '$Id: $'
 
@@ -74,6 +74,9 @@ Examples are contained in ``contrail.security.onlineca.server.test``.
         'contrail.security.onlineca.server.test.repoze_eg': [
             'passwd', '*.ini',
         ],
+        'contrail.security.onlineca.server': [
+            'LICENSE'
+        ]
     },
     classifiers = [
         'Development Status :: 5 - Production/Stable',
