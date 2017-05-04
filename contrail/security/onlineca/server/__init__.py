@@ -1,4 +1,4 @@
-"""Online CA server package.  
+"""Online CA server package.
 
 Contrail Project
 """
@@ -16,3 +16,11 @@ if six.PY2:
 else:
     unicode_for_py3 = lambda string_: (hasattr(string_, 'decode') and
                                        string_.decode() or string_)
+
+# String conversion utility for Python 3
+if six.PY3:
+    _string2bytes = lambda string_: bytes(string_, 'utf-8')
+    _bytes2string = lambda bytes_: bytes_.decode(encoding='utf-8')
+else:
+    _string2bytes = lambda string_: bytes(string_)
+    _bytes2string = lambda bytes_: bytes_

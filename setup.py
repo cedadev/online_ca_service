@@ -21,22 +21,22 @@ except ImportError:
 
 setup(
     name =            	'ContrailOnlineCAService',
-    version =         	'0.3.0',
+    version =         	'0.4.0',
     description =     	'Certificate Authority Web Service',
     long_description = 	'''\
-Provides a simple web service interface to a Certificate Authority.  This is 
+Provides a simple web service interface to a Certificate Authority.  This is
 suitable for use as a SLCS (Short-Lived Credential Service).
 
 The interface is implemented as a WSGI application which fronts a Certificate
 Authority.  The Certificate Authority is implemented with the ``ContrailCA``
 package also available from PyPI.
 
-Web service call can be made to request an X.509 certificate.  The web service 
-interface is RESTful and uses GET and POST operations.  The service should be 
-hosted over HTTPS.  Client authentication is configurable to the required means 
-using any WSGI-compatible filters including repoze.who.  An application is 
-included which  uses HTTP Basic Auth to pass username/password credentials.  
-SSL client-based authentication can also be used.  A client is available with 
+Web service call can be made to request an X.509 certificate.  The web service
+interface is RESTful and uses GET and POST operations.  The service should be
+hosted over HTTPS.  Client authentication is configurable to the required means
+using any WSGI-compatible filters including repoze.who.  An application is
+included which  uses HTTP Basic Auth to pass username/password credentials.
+SSL client-based authentication can also be used.  A client is available with
 the ``ContrailOnlineCAClient`` package also available from PyPI.
 
 The code has been developed for the Contrail Project, http://contrail-project.eu/
@@ -62,7 +62,7 @@ Examples are contained in ``contrail.security.onlineca.server.test``.
     install_requires =  ['ContrailCA',
                          'PasteScript',
                          'WebOb'],
-    extras_require =    {'repoze.who': 'repoze.who'},
+    extras_require =    {'repoze.who': 'repoze.who', 'testserver': 'waitress'},
     license =           __license__,
     test_suite =        'contrail.security.onlineca.server.test',
     packages =          find_packages(),
